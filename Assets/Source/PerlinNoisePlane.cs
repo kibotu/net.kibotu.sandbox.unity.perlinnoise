@@ -2,63 +2,42 @@
 
 namespace Assets.Source
 {
-    public class PerlinNoisePlane : MonoBehaviour {
-
-        public float Scale = 1f;
+    public class PerlinNoisePlane : MonoBehaviour
+    {
+        public float Power = 3.0f;
+        public float Scale = 1.0f;
         public float HeightScale = 1f;
+        private Vector2 _v2SampleStart = new Vector2(0f, 0f);
 
-        public int PlaneSize = 50;
-        public GameObject Geometry;
-        public bool UseMaterial = true;
-        public Material Gray;
-
-        public void Start()
+        void Start()
         {
-            for (var x = 0; x < PlaneSize; ++x)
+            _v2SampleStart = new Vector2(Random.Range(0.0f, 100.0f), Random.Range(0.0f, 100.0f));
+            MakeSomeNoise();
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
             {
-                for (var z = 0; z < PlaneSize; ++z)
-                {
-                    var go = Instantiate(Geometry) as GameObject;
-                    go.transform.position = new Vector3(x, 0, z);
-                    go.transform.parent = transform;
-                }
+                _v2SampleStart = new Vector2(Random.Range(0.0f, 100.0f), Random.Range(0.0f, 100.0f));
             }
-
-            var center = GameObject.Find("Center");
-            center.transform.SetParent(transform, false);
-            center.transform.position = new Vector3(PlaneSize / 2f, 0, PlaneSize / 2f);
+            MakeSomeNoise();
         }
 
-        public void Update()
+        void MakeSomeNoise()
         {
-            var pos = transform.position;
-	        pos.y = HeightScale * Mathf.PerlinNoise(Time.time + (transform.position.x * Scale), Time.time + (transform.position.z * Scale));
-            transform.position = pos;
-	        for(var i = 0; i < transform.childCount; ++i) {
-                var child = transform.GetChild(i);
-	            if (child.name.Equals("Center")) 
-                    continue;
-                var childPos = transform.GetChild(i).transform.position;
-                childPos.y = HeightScale * Mathf.PerlinNoise(Time.time + (childPos.x * Scale), Time.time + (childPos.z * Scale));
-	            child.transform.position = childPos;
-	            if (UseMaterial) child.renderer.material.color = new Color(childPos.y, childPos.y, childPos.y, childPos.y);
-	            else child.renderer.material = Gray;
-	        }
-         }
-
-        public void SetPNScale(float Scale)
-        {
-            this.Scale = Scale;
-        }
-
-        public void SetPNHeightScale(float HeightScale)
-        {
-            this.HeightScale = HeightScale;
-        }
-
-        public void ToggleMaterial()
-        {
-            UseMaterial = !UseMaterial;
+            var mf = GetComponent<MeshFilter>();
+            var vertices = mf.mesh.vertices;
+            for (var i = 0; i < vertices.Length; i++)
+            {
+                var xCoord = _v2SampleStart.x + vertices[i].x * Scale;
+                var yCoord = _v2SampleStart.y + vertices[i].z * Scale;
+//                vertices[i].y = (Mathf.PerlinNoise(xCoord, yCoord) - 0.5f) * Power;
+                vertices[i].y = HeightScale * Mathf.PerlinNoise(Time.time + (xCoord * Scale), Time.time + (yCoord * Scale));
+            }
+            mf.mesh.vertices = vertices;
+            mf.mesh.RecalculateBounds();
+            mf.mesh.RecalculateNormals();
         }
     }
 }
